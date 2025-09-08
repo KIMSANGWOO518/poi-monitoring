@@ -185,7 +185,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
         console.log('POI 데이터 로딩 시작...');
         
         // fetch 요청
-        const response = await fetch('https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/blob/main/json/Fix_Franchise.json');
+        const response = await fetch('https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json');
         
         console.log('Response status:', response.status);
         console.log('Response ok:', response.ok);
