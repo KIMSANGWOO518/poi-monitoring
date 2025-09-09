@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { User, Lock, LogOut, MapPin, Phone, Home, Info, ChevronDown, Check, X } from 'lucide-react';
+// Check와 X를 import에서 제거
+import { User, Lock, LogOut, MapPin, Phone, Home, Info, ChevronDown } from 'lucide-react';
 
 // POI 데이터 타입 정의
 interface POIData {
@@ -16,7 +17,8 @@ interface POIData {
   Store_lat: string;
   Store_long: string;
   FS_name: string;
-  Store_status: string; // status를 Store_status로 변경
+  Store_status: string;
+  status?: string; // optional로 추가
 }
 
 // 멀티셀렉트 드롭다운 컴포넌트
@@ -130,10 +132,7 @@ const TileLayer = dynamic(
   () => import("react-leaflet").then((mod) => mod.TileLayer),
   { ssr: false }
 );
-const Marker = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Marker),
-  { ssr: false }
-);
+// Marker는 사용하지 않으므로 제거
 const Popup = dynamic(
   () => import("react-leaflet").then((mod) => mod.Popup),
   { ssr: false }
@@ -143,20 +142,7 @@ const CircleMarker = dynamic(
   { ssr: false }
 );
 
-// Leaflet 아이콘 설정을 위한 컴포넌트
-const LeafletSetup = dynamic(
-  () => import("leaflet").then((L) => {
-    // 기본 마커 아이콘 설정
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    });
-    return () => null;
-  }),
-  { ssr: false }
-);
+// LeafletSetup은 사용하지 않으므로 제거
 
 // 로그인 컴포넌트
 function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
@@ -192,6 +178,7 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex justify-center mb-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image/inavi_logo.png" 
             alt="iNavi Logo" 
@@ -351,7 +338,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
   // 필터링된 데이터
   const filteredPoiData = poiData.filter(poi => {
     const franchiseMatch = selectedFranchises.length === 0 || selectedFranchises.includes(poi.Franchise_name);
-    const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(poi.Store_status || poi.status);
+    const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(poi.Store_status || poi.status || '');
     return franchiseMatch && statusMatch;
   });
 
@@ -372,6 +359,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
         {/* 헤더 영역 - 로고와 로그아웃 버튼 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image/inavi_logo.png" 
               alt="iNavi Logo" 
@@ -474,7 +462,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
               {filteredPoiData.map((poi, index) => {
                 const lat = parseFloat(poi.Store_lat);
                 const lng = parseFloat(poi.Store_long);
-                const status = poi.Store_status || poi.status;
+                const status = poi.Store_status || poi.status || '';
                 
                 // 유효한 좌표인지 확인
                 if (isNaN(lat) || isNaN(lng)) {
