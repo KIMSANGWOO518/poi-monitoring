@@ -190,7 +190,7 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
         </div>
         
         <h2 className="text-2xl font-bold text-center mb-8 text-gray-800">
-          공간플랫폼개발그룹<br />POI M 로그인
+          공간플랫폼개발그룹<br />POI MAP 로그인
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">
