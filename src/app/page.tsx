@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { User, Lock, LogOut, MapPin, Phone, Home, Info } from 'lucide-react';
+import { User, Lock, LogOut, MapPin, Phone, Home, Info, ChevronDown, Check, X } from 'lucide-react';
 
 // POI 데이터 타입 정의
 interface POIData {
@@ -15,7 +15,109 @@ interface POIData {
   Store_lat: string;
   Store_long: string;
   FS_name: string;
-  status: string;
+  Store_status: string; // status를 Store_status로 변경
+}
+
+// 멀티셀렉트 드롭다운 컴포넌트
+function MultiSelectDropdown({ 
+  options, 
+  selected, 
+  onChange, 
+  label,
+  colors = {}
+}: { 
+  options: string[];
+  selected: string[];
+  onChange: (selected: string[]) => void;
+  label: string;
+  colors?: { [key: string]: string };
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleOption = (option: string) => {
+    if (selected.includes(option)) {
+      onChange(selected.filter(item => item !== option));
+    } else {
+      onChange([...selected, option]);
+    }
+  };
+
+  const selectAll = () => {
+    onChange(options);
+  };
+
+  const clearAll = () => {
+    onChange([]);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2 min-w-[200px] justify-between"
+      >
+        <span className="text-sm">
+          {label}: {selected.length === 0 ? '선택 안함' : selected.length === options.length ? '전체' : `${selected.length}개 선택`}
+        </span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-[9999] mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg" style={{ zIndex: 9999 }}>
+          <div className="p-2 border-b border-gray-200 flex gap-2">
+            <button
+              onClick={selectAll}
+              className="flex-1 px-2 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded transition"
+            >
+              전체 선택
+            </button>
+            <button
+              onClick={clearAll}
+              className="flex-1 px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 rounded transition"
+            >
+              전체 해제
+            </button>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {options.map(option => (
+              <label
+                key={option}
+                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer transition"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.includes(option)}
+                  onChange={() => toggleOption(option)}
+                  className="mr-3"
+                />
+                <span className="flex items-center gap-2 text-sm">
+                  {colors[option] && (
+                    <span 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: colors[option] }}
+                    />
+                  )}
+                  {option}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Leaflet을 동적으로 로드 (SSR 방지)
@@ -33,6 +135,10 @@ const Marker = dynamic(
 );
 const Popup = dynamic(
   () => import("react-leaflet").then((mod) => mod.Popup),
+  { ssr: false }
+);
+const CircleMarker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.CircleMarker),
   { ssr: false }
 );
 
@@ -160,18 +266,35 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
   const [poiData, setPoiData] = useState<POIData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 필터 상태
+  const [selectedFranchises, setSelectedFranchises] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [franchiseOptions, setFranchiseOptions] = useState<string[]>([]);
+  const [statusOptions, setStatusOptions] = useState<string[]>([]);
 
   // 프랜차이즈별 마커 색상 설정
+  const franchiseColors: { [key: string]: string } = {
+    '커피빈': '#8B008B',
+    '스타벅스': '#00FF00', 
+    '투썸플레이스': '#FF0000'
+  };
+
   const getMarkerColor = (franchiseName: string): string => {
-    switch(franchiseName) {
-      case '커피빈':
-        return '#8B008B'; // 보라색
-      case '스타벅스':
-        return '#00FF00'; // 초록색
-      case '투썸플레이스':
-        return '#FF0000'; // 빨간색
+    return franchiseColors[franchiseName] || '#0000FF';
+  };
+
+  // 상태별 마커 스타일 설정
+  const getMarkerOpacity = (status: string): number => {
+    switch(status) {
+      case '개점':
+        return 0.9;
+      case '폐점':
+        return 0.3;
+      case '유지':
+        return 0.7;
       default:
-        return '#0000FF'; // 기본값: 파란색
+        return 0.6;
     }
   };
 
@@ -182,60 +305,41 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
         setIsLoading(true);
         setError(null);
         
-        console.log('POI 데이터 로딩 시작...');
-        
-        // fetch 요청
         const response = await fetch('https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json');
-        
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const text = await response.text();
-        console.log('Raw response length:', text.length);
-        console.log('First 200 chars:', text.substring(0, 200));
+        const data = JSON.parse(text);
         
-        // JSON 파싱 시도
-        let data;
-        try {
-          data = JSON.parse(text);
-          console.log('Data parsed successfully');
-          console.log('Data type:', typeof data);
-          console.log('Is Array:', Array.isArray(data));
+        if (Array.isArray(data)) {
+          setPoiData(data);
           
-          if (Array.isArray(data)) {
-            console.log('Data length:', data.length);
-            console.log('First item:', data[0]);
-            setPoiData(data);
-            setError(null); // 성공시 에러 클리어
-          } else {
-            throw new Error('데이터가 배열 형식이 아닙니다.');
-          }
-        } catch (parseError) {
-          console.error('JSON 파싱 오류:', parseError);
-          throw new Error('JSON 파싱 실패: ' + parseError);
+          // 프랜차이즈 옵션 추출
+          const franchises = [...new Set(data.map(item => item.Franchise_name))].filter(Boolean);
+          setFranchiseOptions(franchises);
+          setSelectedFranchises(franchises); // 초기값: 모두 선택
+          
+          // 상태 옵션 설정 (고정값으로 설정)
+          const statuses = ['개점', '유지', '폐점'];
+          setStatusOptions(statuses);
+          setSelectedStatuses(statuses); // 초기값: 모두 선택
+          
+          setError(null);
+        } else {
+          throw new Error('데이터가 배열 형식이 아닙니다.');
         }
         
       } catch (err) {
         console.error('전체 오류:', err);
-        
-        // 더 자세한 오류 메시지
-        if (err instanceof TypeError && err.message.includes('fetch')) {
-          setError('네트워크 오류: CORS 정책 또는 네트워크 연결을 확인하세요.');
-        } else if (err instanceof SyntaxError) {
-          setError('데이터 형식 오류: JSON 파싱 실패');
-        } else {
-          setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
-        }
+        setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    // 컴포넌트 마운트 후 약간의 딜레이를 주고 실행
     const timer = setTimeout(() => {
       fetchPOIData();
     }, 100);
@@ -243,12 +347,19 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
     return () => clearTimeout(timer);
   }, []);
 
-  // 지도 중심 좌표 계산 (데이터가 있을 경우 첫 번째 POI 위치로)
+  // 필터링된 데이터
+  const filteredPoiData = poiData.filter(poi => {
+    const franchiseMatch = selectedFranchises.length === 0 || selectedFranchises.includes(poi.Franchise_name);
+    const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(poi.Store_status || poi.status);
+    return franchiseMatch && statusMatch;
+  });
+
+  // 지도 중심 좌표 계산
   const getMapCenter = (): [number, number] => {
-    if (poiData.length > 0) {
+    if (filteredPoiData.length > 0) {
       return [
-        parseFloat(poiData[0].Store_lat),
-        parseFloat(poiData[0].Store_long)
+        parseFloat(filteredPoiData[0].Store_lat),
+        parseFloat(filteredPoiData[0].Store_long)
       ];
     }
     return [37.5665, 126.9780]; // 기본값: 서울
@@ -289,36 +400,58 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
           </div>
         </div>
 
-        {/* 데이터 상태 및 범례 표시 */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-700">
-            프랜차이즈 매장 위치 모니터링
-          </h2>
-          <div className="flex items-center gap-6">
-            {/* 범례 */}
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8B008B' }}></span>
-                <span>커피빈</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00FF00' }}></span>
-                <span>스타벅스</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FF0000' }}></span>
-                <span>투썸플레이스</span>
-              </div>
-            </div>
-            {/* 데이터 상태 */}
-            <div className="text-sm text-gray-600">
+        {/* 필터 드롭다운 영역 */}
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-sm font-semibold text-gray-700">필터:</span>
+            
+            <MultiSelectDropdown
+              options={franchiseOptions}
+              selected={selectedFranchises}
+              onChange={setSelectedFranchises}
+              label="프랜차이즈"
+              colors={franchiseColors}
+            />
+            
+            <MultiSelectDropdown
+              options={statusOptions}
+              selected={selectedStatuses}
+              onChange={setSelectedStatuses}
+              label="매장 상태"
+            />
+            
+            <div className="ml-auto text-sm text-gray-600">
               {isLoading ? (
                 <span>데이터 로딩 중...</span>
               ) : error ? (
                 <span className="text-red-600">오류: {error}</span>
               ) : (
-                <span>총 {poiData.length}개 매장</span>
+                <span>
+                  총 {poiData.length}개 중 {filteredPoiData.length}개 표시
+                </span>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* 범례 표시 */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-700">
+            프랜차이즈 매장 위치 모니터링
+          </h2>
+          <div className="flex items-center gap-6">
+            {/* 프랜차이즈 범례 */}
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-medium">프랜차이즈:</span>
+              {franchiseOptions.map(franchise => (
+                <div key={franchise} className="flex items-center gap-1">
+                  <span 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: getMarkerColor(franchise) }}
+                  />
+                  <span>{franchise}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -336,10 +469,11 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
               
-              {/* POI 원형 마커 표시 */}
-              {poiData.map((poi, index) => {
+              {/* 필터링된 POI 원형 마커 표시 */}
+              {filteredPoiData.map((poi, index) => {
                 const lat = parseFloat(poi.Store_lat);
                 const lng = parseFloat(poi.Store_long);
+                const status = poi.Store_status || poi.status;
                 
                 // 유효한 좌표인지 확인
                 if (isNaN(lat) || isNaN(lng)) {
@@ -348,13 +482,13 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
                 
                 return (
                   <CircleMarker 
-                    key={index} 
+                    key={`${poi.Store_code}-${index}`} 
                     center={[lat, lng]}
                     radius={8}
                     fillColor={getMarkerColor(poi.Franchise_name)}
                     color="#ffffff"
                     weight={2}
-                    fillOpacity={0.8}
+                    fillOpacity={getMarkerOpacity(status)}
                   >
                     <Popup maxWidth={350}>
                       <div className="p-3">
@@ -396,11 +530,13 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
                             <div>
                               <span className="font-semibold text-gray-700">상태:</span>
                               <span className={`ml-1 px-2 py-0.5 rounded text-xs font-medium ${
-                                poi.status === '개점' 
+                                status === '개점' 
                                   ? 'bg-green-100 text-green-700' 
+                                  : status === '폐점'
+                                  ? 'bg-red-100 text-red-700'
                                   : 'bg-gray-100 text-gray-700'
                               }`}>
-                                {poi.status}
+                                {status}
                               </span>
                             </div>
                           </div>
