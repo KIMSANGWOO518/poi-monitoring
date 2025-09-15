@@ -167,6 +167,8 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
         onLogin(username);
       } else if (username === 'park_2025' && password === '4321') {
         onLogin(username);
+      } else if (username === 'recruit_2025' && password === '4321') {
+        onLogin(username);
       } else {
         setError('아이디 또는 비밀번호가 올바르지 않습니다.');
       }
@@ -311,7 +313,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
           setSelectedFranchises(franchises); // 초기값: 모두 선택
           
           // 상태 옵션 설정 (고정값으로 설정)
-          const statuses = ['개점', '유지', '폐점'];
+          const statuses = ['개점', '유지', '폐점', '휴점', '재오픈'];
           setStatusOptions(statuses);
           setSelectedStatuses(statuses); // 초기값: 모두 선택
           
