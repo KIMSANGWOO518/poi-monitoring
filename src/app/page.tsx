@@ -550,7 +550,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
         
         <div className="text-center">
           <p className="text-gray-600">
-            위의 지도는 OpenStreetMap을 사용합니다. 마커를 클릭하면 상세 정보를 확인할 수 있습니다.
+            매장 정보는 매주 수요일에 업데이트되며, 마커를 클릭하면 상세 정보를 확인할 수 있습니다.
           </p>
         </div>
       </main>
