@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
+// Check와 X를 import에서 제거
 import { User, Lock, LogOut, MapPin, Phone, Home, Info, ChevronDown } from 'lucide-react';
 
 // POI 데이터 타입 정의
@@ -17,7 +18,7 @@ interface POIData {
   Store_long: string;
   FS_name: string;
   Store_status: string;
-  status?: string;
+  status?: string; // optional로 추가
 }
 
 // 멀티셀렉트 드롭다운 컴포넌트
@@ -37,6 +38,7 @@ function MultiSelectDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // 외부 클릭 감지
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -121,7 +123,7 @@ function MultiSelectDropdown({
   );
 }
 
-// Leaflet 동적 로드
+// Leaflet을 동적으로 로드 (SSR 방지)
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
   { ssr: false }
@@ -130,6 +132,7 @@ const TileLayer = dynamic(
   () => import("react-leaflet").then((mod) => mod.TileLayer),
   { ssr: false }
 );
+// Marker는 사용하지 않으므로 제거
 const Popup = dynamic(
   () => import("react-leaflet").then((mod) => mod.Popup),
   { ssr: false }
@@ -139,7 +142,9 @@ const CircleMarker = dynamic(
   { ssr: false }
 );
 
-// 로그인 컴포넌트 - 로그인 기록 기능 추가됨
+// LeafletSetup은 사용하지 않으므로 제거
+
+// 로그인 컴포넌트
 function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -151,52 +156,24 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
     setError('');
     setIsLoading(true);
 
-    // Google Sheets로 직접 로그 전송하는 함수
-    const saveLoginLog = async (username: string) => {
-      try {
-        await fetch('https://script.google.com/macros/s/AKfycbwl_KwZeFu7dvgyqljnfxaCT5U9e2vfNt6TOcGYBMzb5H8559pkhrLJElgOyHiOF69W/exec', {
-          method: 'POST',
-          mode: 'no-cors',  // CORS 우회
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: username,
-            timestamp: new Date().toLocaleString('ko-KR'),
-            date: new Date().toISOString().split('T')[0]
-          }),
-        });
-        console.log('✅ 로그인 기록 전송 완료');
-      } catch (error) {
-        console.error('❌ 로그인 기록 전송 실패:', error);
+    setTimeout(() => {
+      if (username === 'test_2025' && password === '1234') {
+        onLogin(username);
+      } else if (username === 'poi_2025' && password === '4321') {
+        onLogin(username);
+      } else if (username === 'dynamic_2025' && password === '1234') {
+        onLogin(username);
+      } else if (username === 'gis_2025' && password === '4321') {
+        onLogin(username);
+      } else if (username === 'park_2025' && password === '4321') {
+        onLogin(username);
+      } else if (username === 'recruit_2025' && password === '4321') {
+        onLogin(username);
+      } else {
+        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
       }
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (username === 'test_2025' && password === '1234') {
-      await saveLoginLog(username);  // 로그 저장
-      onLogin(username);
-    } else if (username === 'poi_2025' && password === '4321') {
-      await saveLoginLog(username);  // 로그 저장
-      onLogin(username);
-    } else if (username === 'dynamic_2025' && password === '1234') {
-      await saveLoginLog(username);  // 로그 저장
-      onLogin(username);
-    } else if (username === 'gis_2025' && password === '4321') {
-      await saveLoginLog(username);  // 로그 저장
-      onLogin(username);
-    } else if (username === 'park_2025' && password === '4321') {
-      await saveLoginLog(username);  // 로그 저장
-      onLogin(username);
-    } else if (username === 'recruit_2025' && password === '4321') {
-      await saveLoginLog(username);  // 로그 저장
-      onLogin(username);
-    } else {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-    }
-    
-    setIsLoading(false);
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
@@ -333,12 +310,12 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
           // 프랜차이즈 옵션 추출
           const franchises = [...new Set(data.map(item => item.Franchise_name))].filter(Boolean);
           setFranchiseOptions(franchises);
-          setSelectedFranchises(franchises);
+          setSelectedFranchises(franchises); // 초기값: 모두 선택
           
-          // 상태 옵션 설정
+          // 상태 옵션 설정 (고정값으로 설정)
           const statuses = ['개점', '유지', '폐점', '휴점', '재오픈'];
           setStatusOptions(statuses);
-          setSelectedStatuses(statuses);
+          setSelectedStatuses(statuses); // 초기값: 모두 선택
           
           setError(null);
         } else {
@@ -375,13 +352,13 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
         parseFloat(filteredPoiData[0].Store_long)
       ];
     }
-    return [37.5665, 126.9780];
+    return [37.5665, 126.9780]; // 기본값: 서울
   };
 
   return (
     <div className="min-h-screen bg-white p-8">
       <main className="max-w-7xl mx-auto">
-        {/* 헤더 영역 */}
+        {/* 헤더 영역 - 로고와 로그아웃 버튼 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -454,6 +431,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
             프랜차이즈 매장 위치 모니터링
           </h2>
           <div className="flex items-center gap-6">
+            {/* 프랜차이즈 범례 */}
             <div className="flex items-center gap-4 text-sm">
               <span className="font-medium">프랜차이즈:</span>
               {franchiseOptions.map(franchise => (
@@ -482,12 +460,13 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
               
-              {/* 필터링된 POI 마커 */}
+              {/* 필터링된 POI 원형 마커 표시 */}
               {filteredPoiData.map((poi, index) => {
                 const lat = parseFloat(poi.Store_lat);
                 const lng = parseFloat(poi.Store_long);
                 const status = poi.Store_status || poi.status || '';
                 
+                // 유효한 좌표인지 확인
                 if (isNaN(lat) || isNaN(lng)) {
                   return null;
                 }
@@ -504,12 +483,14 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
                   >
                     <Popup maxWidth={350}>
                       <div className="p-3">
+                        {/* 프랜차이즈 이름 헤더 */}
                         <div className="mb-3 pb-2 border-b border-gray-200">
                           <h3 className="text-lg font-bold" style={{ color: getMarkerColor(poi.Franchise_name) }}>
                             {poi.Franchise_name}
                           </h3>
                         </div>
                         
+                        {/* 매장 정보 */}
                         <div className="space-y-2">
                           <div className="flex items-start">
                             <MapPin className="w-4 h-4 mr-2 mt-0.5 text-gray-500 flex-shrink-0" />
@@ -551,6 +532,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
                             </div>
                           </div>
                           
+                          {/* 좌표 정보 (작게 표시) */}
                           <div className="mt-2 pt-2 border-t border-gray-100">
                             <p className="text-xs text-gray-500">
                               좌표: {poi.Store_lat}, {poi.Store_long}
