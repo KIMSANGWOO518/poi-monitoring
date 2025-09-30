@@ -159,9 +159,9 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
     setTimeout(() => {
       if (username === 'test_2025' && password === '1234') {
         onLogin(username);
-      } else if (username === 'poi_2025' && password === '4321') {
+      } else if (username === 'poi_2025' && password === '7777') {
         onLogin(username);
-      } else if (username === 'dynamic_2025' && password === '1234') {
+      } else if (username === 'dynamic_2025' && password === '8888') {
         onLogin(username);
       } else if (username === 'gis_2025' && password === '4321') {
         onLogin(username);
