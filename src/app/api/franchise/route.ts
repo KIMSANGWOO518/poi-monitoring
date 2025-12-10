@@ -1,10 +1,7 @@
 // src/app/api/franchise/route.ts
 import { NextResponse } from 'next/server';
-// route.ts → src/app/api/franchise/route.ts 기준으로
-// 프로젝트 루트의 json/Fix_Franchise.json 까지 올라가는 상대경로
 import franchiseData from '../../../../json/Fix_Franchise.json';
 
-// JSON 한 줄 타입(선택 사항이지만 있으면 IDE에서 편함)
 type FranchiseItem = {
   Franchise_name: string;
   Franchise_code: string;
@@ -18,19 +15,55 @@ type FranchiseItem = {
   status: string;
 };
 
-// import 한 JSON을 타입 캐스팅
 const data = franchiseData as FranchiseItem[];
 
-// GET /api/franchise
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  // ===========================
+  // 1) API KEY 체크 부분 추가
+  // ===========================
+  const url = new URL(request.url);
 
-  const franchise = searchParams.get('franchise'); // ?franchise=스타벅스
-  const status = searchParams.get('status');       // ?status=유지 이런 식
+  // 요청에서 키 꺼내기 (헤더 > 쿼리 순서)
+  const clientKey =
+    request.headers.get("x-api-key") ??
+    url.searchParams.get("api_key");
+
+  if (!clientKey) {
+    return NextResponse.json(
+      { error: "API key is required" },
+      { status: 401 }
+    );
+  }
+
+  // Vercel 환경변수에 저장한 키 이름 그대로 사용
+  const serverKey = process.env.API_SECRET_KEY;
+  // → 이미 네가 만들어둔 환경변수 이름이 API_SECRET_KEY니까 그대로 활용!
+
+  if (!serverKey) {
+    return NextResponse.json(
+      { error: "Server misconfigured: API_SECRET_KEY is not set" },
+      { status: 500 }
+    );
+  }
+
+  if (clientKey !== serverKey) {
+    return NextResponse.json(
+      { error: "Invalid API key" },
+      { status: 401 }
+    );
+  }
+
+  // ===========================
+  // 2) API KEY 인증 성공 → 기존 로직 실행
+  // ===========================
+
+  const { searchParams } = url;
+
+  const franchise = searchParams.get('franchise'); 
+  const status = searchParams.get('status');
 
   let result = data;
 
-  // 1) 프랜차이즈 이름으로 필터 (옵션)
   if (franchise) {
     const target = franchise.toLowerCase();
     result = result.filter(
@@ -38,7 +71,6 @@ export async function GET(request: Request) {
     );
   }
 
-  // 2) status로 추가 필터 (옵션)
   if (status) {
     const target = status.toLowerCase();
     result = result.filter(
