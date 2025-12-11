@@ -38,8 +38,8 @@ export async function GET(request: Request) {
   if (process.env.API_KEY_TEAM_PARK)
     keyRoles[process.env.API_KEY_TEAM_PARK] = "team_park";
 
-  if (process.env.API_KEY_TEAM_DMN)
-    keyRoles[process.env.API_KEY_TEAM_DMN] = "team_dynamic";
+  if (process.env.API_KEY_TEAM_DNM)
+    keyRoles[process.env.API_KEY_TEAM_DNM] = "team_dynamic";
 
   if (process.env.API_KEY_TEAM_POI)
     keyRoles[process.env.API_KEY_TEAM_POI] = "team_poi";
