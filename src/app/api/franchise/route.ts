@@ -25,12 +25,12 @@ const data = franchiseData as FranchiseItem[];
 let redis: Redis | null = null;
 
 if (
-  process.env.UPSTASH_REDIS_KV_REST_API_URL &&
-  process.env.UPSTASH_REDIS_KV_REST_API_TOKEN
+  process.env.UPSTASH_REDIS_REST_API_URL &&
+  process.env.UPSTASH_REDIS_REST_API_TOKEN
 ) {
   redis = new Redis({
-    url: process.env.UPSTASH_REDIS_KV_REST_API_URL,
-    token: process.env.UPSTASH_REDIS_KV_REST_API_TOKEN,
+    url: process.env.UPSTASH_REDIS_REST_API_URL!,
+    token: process.env.UPSTASH_REDIS_REST_API_TOKEN!,
   });
 } else {
   console.warn(
