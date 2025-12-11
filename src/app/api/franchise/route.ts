@@ -20,17 +20,18 @@ type FranchiseItem = {
 const data = franchiseData as FranchiseItem[];
 
 // -----------------------------
-// 1) Upstash Redis(KV) 클라이언트
+// 1) Upstash Redis 클라이언트
 // -----------------------------
 let redis: Redis | null = null;
 
+// ✅ 여기에서 환경변수 이름은 Upstash 대시보드에서 보여준 그대로 사용
 if (
-  process.env.UPSTASH_REDIS_REST_API_URL &&
-  process.env.UPSTASH_REDIS_REST_API_TOKEN
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
 ) {
   redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_API_URL!,
-    token: process.env.UPSTASH_REDIS_REST_API_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
   });
 } else {
   console.warn(
@@ -67,15 +68,15 @@ async function checkRateLimit(role: string, clientKey: string) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const key = `franchise_api:${role}:${clientKey}:${today}`;
 
-// 오늘 호출 횟수 +1
-const usedCountRaw = await redis!.incr(key);
-// 혹시 타입이 number가 아니더라도 안전하게 숫자로 변환
-const usedCount = Number(usedCountRaw);
+  // 오늘 호출 횟수 +1
+  const usedCountRaw = await redis.incr(key);
+  // 혹시 타입이 number가 아니더라도 안전하게 숫자로 변환
+  const usedCount = Number(usedCountRaw);
 
   // 첫 호출이면 TTL 24시간 설정
-if (usedCount === 1) {
-  await redis!.expire(key, 60 * 60 * 24); // 24h
-}
+  if (usedCount === 1) {
+    await redis.expire(key, 60 * 60 * 24); // 24h
+  }
 
   const remaining = Math.max(0, limit - usedCount);
 
@@ -197,7 +198,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     count: result.length,
     data: result,
-    // 남은 쿼터도 같이 내려주면 팀에서 확인하기 편함 (원하면 제거 가능)
+    // 남은 쿼터도 같이 내려주면 팀에서 확인하기 편함
     rate_limit: {
       role: callerRole,
       used: limitInfo.used,
