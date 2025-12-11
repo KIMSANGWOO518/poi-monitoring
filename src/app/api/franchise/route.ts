@@ -67,13 +67,15 @@ async function checkRateLimit(role: string, clientKey: string) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const key = `franchise_api:${role}:${clientKey}:${today}`;
 
-  // 오늘 호출 횟수 +1
-  const usedCount = await redis.incr<number>(key);
+// 오늘 호출 횟수 +1
+const usedCountRaw = await redis!.incr(key);
+// 혹시 타입이 number가 아니더라도 안전하게 숫자로 변환
+const usedCount = Number(usedCountRaw);
 
   // 첫 호출이면 TTL 24시간 설정
-  if (usedCount === 1) {
-    await redis.expire(key, 60 * 60 * 24); // 24h
-  }
+if (usedCount === 1) {
+  await redis!.expire(key, 60 * 60 * 24); // 24h
+}
 
   const remaining = Math.max(0, limit - usedCount);
 
