@@ -29,6 +29,21 @@ export async function GET(request: Request) {
 
   const serverKey = process.env.API_SECRET_KEY;
 
+  // (로그용) 필터 파라미터, IP 추출
+  const franchise = searchParams.get('franchise'); // ?franchise=스타벅스
+  const status = searchParams.get('status');       // ?status=유지
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+
+  // === 호출 로그 찍기 ===
+  console.log('[FRANCHISE_API_CALL]', {
+    time: new Date().toISOString(),
+    ip,
+    key: clientKey ? clientKey.slice(0, 4) + '***' : 'NO_KEY',
+    franchise,
+    status,
+  });
+  // =====================
+
   // 서버에 키가 세팅 안 돼 있으면 서버 설정 문제
   if (!serverKey) {
     return NextResponse.json(
@@ -45,9 +60,6 @@ export async function GET(request: Request) {
     );
   }
   // -------------- 여기까지 키 체크 --------------
-
-  const franchise = searchParams.get('franchise'); // ?franchise=스타벅스
-  const status = searchParams.get('status');       // ?status=유지
 
   let result = data;
 
