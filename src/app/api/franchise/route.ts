@@ -1,6 +1,7 @@
 // src/app/api/franchise/route.ts
-import { NextResponse } from 'next/server';
-import franchiseData from '../../../../json/Fix_Franchise.json';
+import { NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
+import franchiseData from "../../../../json/Fix_Franchise.json";
 
 // JSON 한 줄 타입
 type FranchiseItem = {
@@ -18,6 +19,74 @@ type FranchiseItem = {
 
 const data = franchiseData as FranchiseItem[];
 
+// -----------------------------
+// 1) Upstash Redis(KV) 클라이언트
+// -----------------------------
+let redis: Redis | null = null;
+
+if (
+  process.env.UPSTASH_REDIS_KV_REST_API_URL &&
+  process.env.UPSTASH_REDIS_KV_REST_API_TOKEN
+) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_KV_REST_API_URL,
+    token: process.env.UPSTASH_REDIS_KV_REST_API_TOKEN,
+  });
+} else {
+  console.warn(
+    "[FRANCHISE_API] Upstash Redis env not configured. Rate limit disabled."
+  );
+}
+
+// -----------------------------
+// 2) 역할별 일일 호출 제한 설정
+// -----------------------------
+const DAILY_LIMITS: Record<string, number> = {
+  admin: Infinity, // 관리자 무제한
+  team_park: 200,
+  team_dynamic: 500,
+  team_poi: 500,
+  team_digital_display: 200,
+};
+
+// Redis로 카운트 + 제한 체크
+async function checkRateLimit(role: string, clientKey: string) {
+  const limit = DAILY_LIMITS[role];
+
+  // 제한 값이 없거나 Infinity면 체크 안 함
+  if (!Number.isFinite(limit)) return { used: 0, remaining: Infinity };
+
+  if (!redis) {
+    // Redis 설정 안 되어 있으면 그냥 패스 (개발환경 등)
+    console.warn(
+      "[FRANCHISE_API] Redis not available, skipping rate limit check."
+    );
+    return { used: 0, remaining: Infinity };
+  }
+
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const key = `franchise_api:${role}:${clientKey}:${today}`;
+
+  // 오늘 호출 횟수 +1
+  const usedCount = await redis.incr<number>(key);
+
+  // 첫 호출이면 TTL 24시간 설정
+  if (usedCount === 1) {
+    await redis.expire(key, 60 * 60 * 24); // 24h
+  }
+
+  const remaining = Math.max(0, limit - usedCount);
+
+  if (usedCount > limit) {
+    return { used: usedCount, remaining: 0, exceeded: true };
+  }
+
+  return { used: usedCount, remaining, exceeded: false };
+}
+
+// -----------------------------
+// 3) 실제 API 핸들러
+// -----------------------------
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
@@ -82,7 +151,33 @@ export async function GET(request: Request) {
     );
   }
 
-  // 6) 실제 데이터 필터링
+  // -----------------------------
+  // 6) 팀별 일일 호출 제한 체크
+  // -----------------------------
+  const limitInfo = await checkRateLimit(callerRole, clientKey);
+
+  if (limitInfo.exceeded) {
+    console.warn("[FRANCHISE_RATE_LIMIT]", {
+      role: callerRole,
+      key: clientKey.slice(0, 4) + "***",
+      used: limitInfo.used,
+      remaining: limitInfo.remaining,
+    });
+
+    return NextResponse.json(
+      {
+        error: "Daily API quota exceeded",
+        role: callerRole,
+        used: limitInfo.used,
+        remaining: limitInfo.remaining,
+      },
+      { status: 429 }
+    );
+  }
+
+  // -----------------------------
+  // 7) 실제 데이터 필터링
+  // -----------------------------
   let result = data;
 
   if (franchise) {
@@ -100,5 +195,11 @@ export async function GET(request: Request) {
   return NextResponse.json({
     count: result.length,
     data: result,
+    // 남은 쿼터도 같이 내려주면 팀에서 확인하기 편함 (원하면 제거 가능)
+    rate_limit: {
+      role: callerRole,
+      used: limitInfo.used,
+      remaining: limitInfo.remaining,
+    },
   });
 }
