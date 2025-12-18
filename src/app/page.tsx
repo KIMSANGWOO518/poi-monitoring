@@ -217,6 +217,7 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
   // 프랜차이즈별 마커 색상 설정
   const franchiseColors: { [key: string]: string } = {
     커피빈: "#8B008B",
+    할리스: "#0000FF",
     스타벅스: "#00FF00",
     투썸플레이스: "#FF0000",
   };
