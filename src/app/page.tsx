@@ -353,18 +353,41 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
                   icon={getLeafletIcon(poi.Franchise_name)}
                 >
                   <Popup>
-                    <div className="flex items-center gap-2 mb-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={getIconUrl(poi.Franchise_name)}
-                        alt={`${poi.Franchise_name} 로고`}
-                        className="w-5 h-5"
-                      />
-                      <b>{poi.Franchise_name}</b>
+                    <div className="min-w-[260px] max-w-[320px]">
+                      {/* 헤더: 로고 + 프랜차이즈 */}
+                      <div className="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getIconUrl(poi.Franchise_name)}
+                          alt={`${poi.Franchise_name} 로고`}
+                          className="w-6 h-6 rounded-sm object-contain"
+                        />
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[13px] text-gray-500">{poi.Franchise_name}</span>
+                          <span className="text-[15px] font-semibold text-gray-900">
+                            {poi.Store_name}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 본문: 주소/전화 */}
+                      <div className="space-y-2 text-[13px] text-gray-800">
+                        <div className="flex gap-2">
+                          <span className="shrink-0 w-5 text-center">📍</span>
+                          <span className="break-words">{poi.Store_addr}</span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <span className="shrink-0 w-5 text-center">📞</span>
+                          <a
+                            href={`tel:${(poi.Store_tel || "").replace(/[^0-9+]/g, "")}`}
+                            className="text-blue-700 hover:underline"
+                          >
+                            {poi.Store_tel}
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                    <div>{poi.Store_name}</div>
-                    <div className="text-sm text-gray-600">{poi.Store_addr}</div>
-                    <div className="text-sm">{poi.Store_tel}</div>
                   </Popup>
                 </Marker>
               );
