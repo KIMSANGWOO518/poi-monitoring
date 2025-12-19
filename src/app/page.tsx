@@ -166,12 +166,9 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex justify-center mb-6">
+          {/* ✅ public/icons에 넣어둔 로고를 쓰면 가장 안정적 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image/inavi_logo.png"
-            alt="iNavi 로고"
-            className="h-14"
-          />
+          <img src="/icons/inavi_logo.png" alt="iNavi 로고" className="h-14" />
         </div>
 
         <h2 className="text-xl font-bold text-center mb-6">
@@ -228,7 +225,11 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
     };
   }, []);
 
-  const ICON_BASE = "https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image";
+  /**
+   * ✅ 핵심 변경점
+   * public/icons/* 에 넣은 파일은 런타임에서 /icons/* 로 접근됩니다.
+   */
+  const ICON_BASE = "/icons";
 
   const franchiseIcons = useMemo<Record<string, string>>(
     () => ({
@@ -252,7 +253,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         name,
         leaflet.icon({
           iconUrl: url,
-          iconRetinaUrl: url, // ✅ 추가 (레티나/일부 환경 깨짐 방지)
+          iconRetinaUrl: url,
           iconSize: [34, 34],
           iconAnchor: [17, 34],
           popupAnchor: [0, -34],
@@ -260,11 +261,12 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
       );
     }
 
+    const fallback = `${ICON_BASE}/inavi_logo.png`;
     cache.set(
       "__default__",
       leaflet.icon({
-        iconUrl: `${ICON_BASE}/inavi_logo.png`,
-        iconRetinaUrl: `${ICON_BASE}/inavi_logo.png`, // ✅ 추가
+        iconUrl: fallback,
+        iconRetinaUrl: fallback,
         iconSize: [34, 34],
         iconAnchor: [17, 34],
         popupAnchor: [0, -34],
@@ -336,7 +338,6 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
               <Marker
                 key={poi.FS_name || `${poi.Franchise_code}-${poi.Store_code}`}
                 position={[lat, lng]}
-                // ✅ leaflet 준비되기 전에는 icon 안 넘김 (기본 마커로라도 뜸)
                 icon={getLeafletIcon(poi.Franchise_name)}
               >
                 <Popup>
