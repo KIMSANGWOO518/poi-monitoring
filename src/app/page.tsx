@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { Icon } from "leaflet";
 import L from "leaflet";
+import type { Icon } from "leaflet";
 import { LogOut, ChevronDown } from "lucide-react";
 
 /* =========================
@@ -24,7 +23,7 @@ interface POIData {
 }
 
 /* =========================
-   멀티셀렉트 드롭다운 (로고 버전)
+   멀티셀렉트 드롭다운
 ========================= */
 function MultiSelectDropdown({
   options,
@@ -37,7 +36,7 @@ function MultiSelectDropdown({
   selected: string[];
   onChange: (selected: string[]) => void;
   label: string;
-  icons?: { [key: string]: string };
+  icons?: Record<string, string>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -132,9 +131,7 @@ function MultiSelectDropdown({
 /* =========================
    Leaflet (SSR 방지)
 ========================= */
-const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), {
-  ssr: false,
-});
+const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false });
 const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
@@ -177,8 +174,7 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
         </div>
 
         <h2 className="text-xl font-bold text-center mb-6">
-          공간플랫폼개발그룹
-          <br />
+          공간플랫폼개발그룹<br />
           POI MAP 로그인
         </h2>
 
@@ -218,18 +214,22 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
   const ICON_BASE = "https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image";
 
-  const franchiseIcons: { [key: string]: string } = {
-    커피빈: `${ICON_BASE}/bean.png`,
-    할리스: `${ICON_BASE}/hollys.gif`,
-    스타벅스: `${ICON_BASE}/star.png`,
-    투썸플레이스: `${ICON_BASE}/two.png`,
-  };
+  const franchiseIcons = useMemo<Record<string, string>>(
+    () => ({
+      커피빈: `${ICON_BASE}/bean.png`,
+      할리스: `${ICON_BASE}/hollys.gif`,
+      스타벅스: `${ICON_BASE}/star.png`,
+      투썸플레이스: `${ICON_BASE}/two.png`,
+    }),
+    [ICON_BASE]
+  );
 
   const getIconUrl = (name: string) => franchiseIcons[name] || `${ICON_BASE}/inavi_logo.png`;
 
-  // ✅ 아이콘 캐싱(매 렌더마다 new icon() 생성 방지)
+  // 아이콘 캐시
   const iconCache = useMemo(() => {
     const cache = new Map<string, Icon>();
+
     for (const [name, url] of Object.entries(franchiseIcons)) {
       cache.set(
         name,
@@ -241,7 +241,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         })
       );
     }
-    // fallback
+
     cache.set(
       "__default__",
       L.icon({
@@ -251,16 +251,15 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         popupAnchor: [0, -34],
       })
     );
+
     return cache;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [franchiseIcons, ICON_BASE]);
 
   const getLeafletIcon = (name: string) => iconCache.get(name) || iconCache.get("__default__")!;
 
   useEffect(() => {
     fetch("https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json")
       .then((res) => res.json())
-      // ✅ 여기만 수정: data 타입 고정 + franchises를 string[]로 확정
       .then((data: POIData[]) => {
         setPoiData(data);
 
@@ -275,9 +274,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         setFranchiseOptions(franchises);
         setSelectedFranchises(franchises);
       })
-      .catch((err) => {
-        console.error("Fix_Franchise.json fetch error:", err);
-      });
+      .catch((err) => console.error("Fix_Franchise.json fetch error:", err));
   }, []);
 
   const filtered = poiData.filter(
