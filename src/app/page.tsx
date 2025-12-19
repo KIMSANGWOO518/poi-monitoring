@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import L from "leaflet";
-import type { Icon } from "leaflet";
+import type { Icon as LeafletIcon } from "leaflet"; // ✅ type-only import (런타임 영향 없음)
 import { LogOut, ChevronDown } from "lucide-react";
 
 /* =========================
@@ -129,7 +128,7 @@ function MultiSelectDropdown({
 }
 
 /* =========================
-   Leaflet (SSR 방지)
+   Leaflet / react-leaflet (SSR 방지)
 ========================= */
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
@@ -212,6 +211,20 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
   const [selectedFranchises, setSelectedFranchises] = useState<string[]>([]);
   const [franchiseOptions, setFranchiseOptions] = useState<string[]>([]);
 
+  // ✅ leaflet을 “클라이언트에서만” 로드 (window 에러 방지)
+  const [leaflet, setLeaflet] = useState<null | typeof import("leaflet")>(null);
+  useEffect(() => {
+    let alive = true;
+    import("leaflet")
+      .then((mod) => {
+        if (alive) setLeaflet(mod);
+      })
+      .catch((err) => console.error("leaflet import error:", err));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const ICON_BASE = "https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image";
 
   const franchiseIcons = useMemo<Record<string, string>>(
@@ -226,14 +239,15 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
   const getIconUrl = (name: string) => franchiseIcons[name] || `${ICON_BASE}/inavi_logo.png`;
 
-  // 아이콘 캐시
+  // ✅ leaflet 로드된 이후에만 iconCache 생성
   const iconCache = useMemo(() => {
-    const cache = new Map<string, Icon>();
+    if (!leaflet) return null;
 
+    const cache = new Map<string, LeafletIcon>();
     for (const [name, url] of Object.entries(franchiseIcons)) {
       cache.set(
         name,
-        L.icon({
+        leaflet.icon({
           iconUrl: url,
           iconSize: [34, 34],
           iconAnchor: [17, 34],
@@ -244,7 +258,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
     cache.set(
       "__default__",
-      L.icon({
+      leaflet.icon({
         iconUrl: `${ICON_BASE}/inavi_logo.png`,
         iconSize: [34, 34],
         iconAnchor: [17, 34],
@@ -253,9 +267,9 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
     );
 
     return cache;
-  }, [franchiseIcons, ICON_BASE]);
+  }, [leaflet, franchiseIcons, ICON_BASE]);
 
-  const getLeafletIcon = (name: string) => iconCache.get(name) || iconCache.get("__default__")!;
+  const getLeafletIcon = (name: string) => iconCache?.get(name) || iconCache?.get("__default__") || undefined;
 
   useEffect(() => {
     fetch("https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json")
@@ -316,6 +330,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
               <Marker
                 key={poi.FS_name || `${poi.Franchise_code}-${poi.Store_code}`}
                 position={[lat, lng]}
+                // ✅ leaflet 준비되기 전에는 icon 안 넘김 (기본 마커로라도 뜸)
                 icon={getLeafletIcon(poi.Franchise_name)}
               >
                 <Popup>
