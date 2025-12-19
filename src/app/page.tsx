@@ -18,7 +18,9 @@ interface POIData {
   Store_lat: string;
   Store_long: string;
   FS_name: string;
+  FS_code?: string;
   Store_region?: string;
+  status?: string; // ✅ 추가
 }
 
 /* =========================
@@ -243,12 +245,29 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
   const getIconUrl = (name: string) => franchiseIcons[name] || `${ICON_BASE}/inavi_logo.png`;
 
+  const formatCoord = (v: unknown) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "-";
+    return n.toFixed(6);
+  };
+
+  const getStatusBadge = (status?: string) => {
+    const s = (status || "").trim();
+    // 필요하면 여기서 케이스를 더 추가하면 됨
+    if (s === "유지") return { text: "유지", cls: "bg-green-50 text-green-700 border-green-200" };
+    if (s === "신규") return { text: "신규", cls: "bg-blue-50 text-blue-700 border-blue-200" };
+    if (s === "폐점" || s === "삭제")
+      return { text: s, cls: "bg-red-50 text-red-700 border-red-200" };
+    if (!s) return { text: "상태없음", cls: "bg-gray-50 text-gray-700 border-gray-200" };
+    return { text: s, cls: "bg-gray-50 text-gray-700 border-gray-200" };
+  };
+
   // ✅ leaflet 로드된 이후에만 iconCache 생성
   const iconCache = useMemo(() => {
     if (!leaflet) return null;
 
     // ✅ 여기서 마커 크기 조절 가능
-    const ICON_SIZE: [number, number] = [20, 20]; // ← 더 작게(원하면 16,16 / 18,18 등)
+    const ICON_SIZE: [number, number] = [20, 20];
     const ICON_ANCHOR: [number, number] = [ICON_SIZE[0] / 2, ICON_SIZE[1]]; // 가운데-아래
     const POPUP_ANCHOR: [number, number] = [0, -ICON_SIZE[1]];
 
@@ -306,8 +325,6 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
   /**
    * ✅ 전체 해제 시(선택 0개) 지도에 "아무것도" 안 보이게
-   * 기존: selectedFranchises.length === 0 이면 전체 표시(문제)
-   * 수정: selectedFranchises.length > 0 일 때만 includes 허용
    */
   const filtered = poiData.filter(
     (p) => selectedFranchises.length > 0 && selectedFranchises.includes(p.Franchise_name)
@@ -346,31 +363,42 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
               const lng = Number(poi.Store_long);
               if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
+              const badge = getStatusBadge(poi.status);
+
               return (
                 <Marker
-                  key={poi.FS_name || `${poi.Franchise_code}-${poi.Store_code}`}
+                  key={poi.FS_name || poi.FS_code || `${poi.Franchise_code}-${poi.Store_code}`}
                   position={[lat, lng]}
                   icon={getLeafletIcon(poi.Franchise_name)}
                 >
                   <Popup>
-                    <div className="min-w-[260px] max-w-[320px]">
-                      {/* 헤더: 로고 + 프랜차이즈 */}
-                      <div className="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={getIconUrl(poi.Franchise_name)}
-                          alt={`${poi.Franchise_name} 로고`}
-                          className="w-6 h-6 rounded-sm object-contain"
-                        />
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-[13px] text-gray-500">{poi.Franchise_name}</span>
-                          <span className="text-[15px] font-semibold text-gray-900">
-                            {poi.Store_name}
-                          </span>
+                    <div className="min-w-[260px] max-w-[340px]">
+                      {/* 헤더: 로고 + 프랜차이즈 + 상태 배지 */}
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-200">
+                        <div className="flex items-center gap-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={getIconUrl(poi.Franchise_name)}
+                            alt={`${poi.Franchise_name} 로고`}
+                            className="w-6 h-6 rounded-sm object-contain"
+                          />
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-[13px] text-gray-500">{poi.Franchise_name}</span>
+                            <span className="text-[15px] font-semibold text-gray-900">
+                              {poi.Store_name}
+                            </span>
+                          </div>
                         </div>
+
+                        <span
+                          className={`ml-3 px-2 py-[2px] text-[12px] border rounded-full ${badge.cls}`}
+                          title="status"
+                        >
+                          {badge.text}
+                        </span>
                       </div>
 
-                      {/* 본문: 주소/전화 */}
+                      {/* 본문 */}
                       <div className="space-y-2 text-[13px] text-gray-800">
                         <div className="flex gap-2">
                           <span className="shrink-0 w-5 text-center">📍</span>
@@ -385,6 +413,20 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
                           >
                             {poi.Store_tel}
                           </a>
+                        </div>
+
+                        {/* ✅ 좌표 표시 (lat/long) */}
+                        <div className="flex gap-2">
+                          <span className="shrink-0 w-5 text-center">🧭</span>
+                          <span className="text-gray-700">
+                            {formatCoord(poi.Store_lat)}, {formatCoord(poi.Store_long)}
+                          </span>
+                        </div>
+
+                        {/* ✅ status 표시 (추가로 한 줄 더 표시 원할 때) */}
+                        <div className="flex gap-2">
+                          <span className="shrink-0 w-5 text-center">✅</span>
+                          <span className="text-gray-700">{badge.text}</span>
                         </div>
                       </div>
                     </div>
