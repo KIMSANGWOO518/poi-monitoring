@@ -254,9 +254,9 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         leaflet.icon({
           iconUrl: url,
           iconRetinaUrl: url,
-          iconSize: [34, 34],
-          iconAnchor: [17, 34],
-          popupAnchor: [0, -34],
+          iconSize: [24, 24],
+          iconAnchor: [12, 24],
+          popupAnchor: [0, -24],
         })
       );
     }
