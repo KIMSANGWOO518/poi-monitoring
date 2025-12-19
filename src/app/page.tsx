@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { User, Lock, LogOut, MapPin, Phone, Home, Info, ChevronDown } from "lucide-react";
+import type { Icon } from "leaflet";
+import L from "leaflet";
+import { LogOut, ChevronDown } from "lucide-react";
 
 /* =========================
    타입 정의
@@ -61,6 +63,7 @@ function MultiSelectDropdown({
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-between min-w-[220px]"
       >
@@ -79,12 +82,14 @@ function MultiSelectDropdown({
         <div className="absolute z-[9999] mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg">
           <div className="p-2 border-b border-gray-200 flex gap-2">
             <button
+              type="button"
               onClick={selectAll}
               className="flex-1 px-2 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded"
             >
               전체 선택
             </button>
             <button
+              type="button"
               onClick={clearAll}
               className="flex-1 px-2 py-1 text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 rounded"
             >
@@ -94,10 +99,7 @@ function MultiSelectDropdown({
 
           <div className="max-h-60 overflow-y-auto">
             {options.map((option) => (
-              <label
-                key={option}
-                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-              >
+              <label key={option} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={selected.includes(option)}
@@ -107,11 +109,7 @@ function MultiSelectDropdown({
                 <span className="flex items-center gap-2 text-sm">
                   {icons[option] && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={icons[option]}
-                      alt={option}
-                      className="w-4 h-4 object-contain"
-                    />
+                    <img src={icons[option]} alt={`${option} 로고`} className="w-4 h-4 object-contain" />
                   )}
                   {option}
                 </span>
@@ -164,13 +162,14 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image/inavi_logo.png"
-            alt="iNavi"
+            alt="iNavi 로고"
             className="h-14"
           />
         </div>
 
         <h2 className="text-xl font-bold text-center mb-6">
-          공간플랫폼개발그룹<br />POI MAP 로그인
+          공간플랫폼개발그룹<br />
+          POI MAP 로그인
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -190,7 +189,7 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
 
           {error && <div className="text-sm text-red-600">{error}</div>}
 
-          <button className="w-full bg-blue-600 text-white py-2 rounded">
+          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">
             로그인
           </button>
         </form>
@@ -202,13 +201,12 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
 /* =========================
    메인 지도 컴포넌트
 ========================= */
-function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: () => void }) {
+function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: () => void }) {
   const [poiData, setPoiData] = useState<POIData[]>([]);
   const [selectedFranchises, setSelectedFranchises] = useState<string[]>([]);
   const [franchiseOptions, setFranchiseOptions] = useState<string[]>([]);
 
-  const ICON_BASE =
-    "https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image";
+  const ICON_BASE = "https://raw.githubusercontent.com/KIMSANGWOO518/inavi-calendar/main/image";
 
   const franchiseIcons: { [key: string]: string } = {
     커피빈: `${ICON_BASE}/bean.png`,
@@ -217,28 +215,43 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
     투썸플레이스: `${ICON_BASE}/two.png`,
   };
 
-  const getIconUrl = (name: string) =>
-    franchiseIcons[name] || `${ICON_BASE}/inavi_logo.png`;
+  const getIconUrl = (name: string) => franchiseIcons[name] || `${ICON_BASE}/inavi_logo.png`;
 
-  const getLeafletIcon = (name: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const L = require("leaflet");
-    return L.icon({
-      iconUrl: getIconUrl(name),
-      iconSize: [34, 34],
-      iconAnchor: [17, 34],
-      popupAnchor: [0, -34],
-    });
-  };
+  // ✅ 아이콘 캐싱(매 렌더마다 new icon() 생성 방지)
+  const iconCache = useMemo(() => {
+    const cache = new Map<string, Icon>();
+    for (const [name, url] of Object.entries(franchiseIcons)) {
+      cache.set(
+        name,
+        L.icon({
+          iconUrl: url,
+          iconSize: [34, 34],
+          iconAnchor: [17, 34],
+          popupAnchor: [0, -34],
+        })
+      );
+    }
+    // fallback
+    cache.set(
+      "__default__",
+      L.icon({
+        iconUrl: `${ICON_BASE}/inavi_logo.png`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -34],
+      })
+    );
+    return cache;
+  }, []);
+
+  const getLeafletIcon = (name: string) => iconCache.get(name) || iconCache.get("__default__")!;
 
   useEffect(() => {
-    fetch(
-      "https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json"
-    )
+    fetch("https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json")
       .then((res) => res.json())
       .then((data) => {
         setPoiData(data);
-        const franchises = [...new Set(data.map((d: any) => d.Franchise_name))];
+        const franchises = [...new Set(data.map((d: any) => d.Franchise_name))].filter(Boolean);
         setFranchiseOptions(franchises);
         setSelectedFranchises(franchises);
       });
@@ -250,12 +263,16 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
 
   return (
     <div className="min-h-screen p-6 bg-white">
-      <div className="flex justify-between mb-6">
+      <div className="flex justify-between mb-6 items-center">
         <h1 className="text-2xl font-bold">POI 모니터링 지도</h1>
-        <button onClick={onLogout} className="text-sm text-gray-600">
-          <LogOut className="inline w-4 h-4 mr-1" />
-          로그아웃
-        </button>
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">{currentUser}님</span>
+          <button type="button" onClick={onLogout} className="text-sm text-gray-600">
+            <LogOut className="inline w-4 h-4 mr-1" />
+            로그아웃
+          </button>
+        </div>
       </div>
 
       <MultiSelectDropdown
@@ -270,24 +287,30 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
         <MapContainer center={[37.5665, 126.978]} zoom={11} style={{ height: "100%" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-          {filtered.map((poi, i) => (
-            <Marker
-              key={i}
-              position={[+poi.Store_lat, +poi.Store_long]}
-              icon={getLeafletIcon(poi.Franchise_name)}
-            >
-              <Popup>
-                <div className="flex items-center gap-2 mb-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={getIconUrl(poi.Franchise_name)} className="w-5 h-5" />
-                  <b>{poi.Franchise_name}</b>
-                </div>
-                <div>{poi.Store_name}</div>
-                <div className="text-sm text-gray-600">{poi.Store_addr}</div>
-                <div className="text-sm">{poi.Store_tel}</div>
-              </Popup>
-            </Marker>
-          ))}
+          {filtered.map((poi) => {
+            const lat = Number(poi.Store_lat);
+            const lng = Number(poi.Store_long);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+            return (
+              <Marker
+                key={poi.FS_name || `${poi.Franchise_code}-${poi.Store_code}`}
+                position={[lat, lng]}
+                icon={getLeafletIcon(poi.Franchise_name)}
+              >
+                <Popup>
+                  <div className="flex items-center gap-2 mb-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={getIconUrl(poi.Franchise_name)} alt={`${poi.Franchise_name} 로고`} className="w-5 h-5" />
+                    <b>{poi.Franchise_name}</b>
+                  </div>
+                  <div>{poi.Store_name}</div>
+                  <div className="text-sm text-gray-600">{poi.Store_addr}</div>
+                  <div className="text-sm">{poi.Store_tel}</div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
     </div>
@@ -298,9 +321,12 @@ function MapContent({ currentUser, onLogout }: { currentUser: string; onLogout: 
    루트 컴포넌트
 ========================= */
 export default function POIMonitoringApp() {
+  useEffect(() => {
+    console.log("### POI MAP VERSION: 2025-12-19 marker-logo ###");
+  }, []);
+
   const [user, setUser] = useState<string | null>(null);
 
   if (!user) return <LoginForm onLogin={setUser} />;
-
   return <MapContent currentUser={user} onLogout={() => setUser(null)} />;
 }
