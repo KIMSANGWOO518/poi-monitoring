@@ -99,7 +99,10 @@ function MultiSelectDropdown({
 
           <div className="max-h-60 overflow-y-auto">
             {options.map((option) => (
-              <label key={option} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
+              <label
+                key={option}
+                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+              >
                 <input
                   type="checkbox"
                   checked={selected.includes(option)}
@@ -109,7 +112,11 @@ function MultiSelectDropdown({
                 <span className="flex items-center gap-2 text-sm">
                   {icons[option] && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={icons[option]} alt={`${option} 로고`} className="w-4 h-4 object-contain" />
+                    <img
+                      src={icons[option]}
+                      alt={`${option} 로고`}
+                      className="w-4 h-4 object-contain"
+                    />
                   )}
                   {option}
                 </span>
@@ -125,7 +132,9 @@ function MultiSelectDropdown({
 /* =========================
    Leaflet (SSR 방지)
 ========================= */
-const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
+const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), {
+  ssr: false,
+});
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false });
 const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
@@ -168,7 +177,8 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
         </div>
 
         <h2 className="text-xl font-bold text-center mb-6">
-          공간플랫폼개발그룹<br />
+          공간플랫폼개발그룹
+          <br />
           POI MAP 로그인
         </h2>
 
@@ -242,6 +252,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
       })
     );
     return cache;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getLeafletIcon = (name: string) => iconCache.get(name) || iconCache.get("__default__")!;
@@ -249,11 +260,23 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
   useEffect(() => {
     fetch("https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json")
       .then((res) => res.json())
-      .then((data) => {
+      // ✅ 여기만 수정: data 타입 고정 + franchises를 string[]로 확정
+      .then((data: POIData[]) => {
         setPoiData(data);
-        const franchises = [...new Set(data.map((d: any) => d.Franchise_name))].filter(Boolean);
+
+        const franchises: string[] = Array.from(
+          new Set(
+            data
+              .map((d) => d.Franchise_name)
+              .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+          )
+        );
+
         setFranchiseOptions(franchises);
         setSelectedFranchises(franchises);
+      })
+      .catch((err) => {
+        console.error("Fix_Franchise.json fetch error:", err);
       });
   }, []);
 
@@ -301,7 +324,11 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
                 <Popup>
                   <div className="flex items-center gap-2 mb-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={getIconUrl(poi.Franchise_name)} alt={`${poi.Franchise_name} 로고`} className="w-5 h-5" />
+                    <img
+                      src={getIconUrl(poi.Franchise_name)}
+                      alt={`${poi.Franchise_name} 로고`}
+                      className="w-5 h-5"
+                    />
                     <b>{poi.Franchise_name}</b>
                   </div>
                   <div>{poi.Store_name}</div>
