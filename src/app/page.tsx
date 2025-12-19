@@ -130,7 +130,9 @@ function MultiSelectDropdown({
 /* =========================
    Leaflet / react-leaflet (SSR 방지)
 ========================= */
-const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
+const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), {
+  ssr: false,
+});
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false });
 const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
@@ -173,7 +175,8 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
         </div>
 
         <h2 className="text-xl font-bold text-center mb-6">
-          공간플랫폼개발그룹<br />
+          공간플랫폼개발그룹
+          <br />
           POI MAP 로그인
         </h2>
 
@@ -249,6 +252,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         name,
         leaflet.icon({
           iconUrl: url,
+          iconRetinaUrl: url, // ✅ 추가 (레티나/일부 환경 깨짐 방지)
           iconSize: [34, 34],
           iconAnchor: [17, 34],
           popupAnchor: [0, -34],
@@ -260,6 +264,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
       "__default__",
       leaflet.icon({
         iconUrl: `${ICON_BASE}/inavi_logo.png`,
+        iconRetinaUrl: `${ICON_BASE}/inavi_logo.png`, // ✅ 추가
         iconSize: [34, 34],
         iconAnchor: [17, 34],
         popupAnchor: [0, -34],
@@ -269,7 +274,8 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
     return cache;
   }, [leaflet, franchiseIcons, ICON_BASE]);
 
-  const getLeafletIcon = (name: string) => iconCache?.get(name) || iconCache?.get("__default__") || undefined;
+  const getLeafletIcon = (name: string) =>
+    iconCache?.get(name) || iconCache?.get("__default__") || undefined;
 
   useEffect(() => {
     fetch("https://raw.githubusercontent.com/KIMSANGWOO518/poi-monitoring/main/json/Fix_Franchise.json")
