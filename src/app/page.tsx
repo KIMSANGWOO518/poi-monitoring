@@ -247,6 +247,11 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
   const iconCache = useMemo(() => {
     if (!leaflet) return null;
 
+    // ✅ 여기서 마커 크기 조절 가능
+    const ICON_SIZE: [number, number] = [20, 20]; // ← 더 작게(원하면 16,16 / 18,18 등)
+    const ICON_ANCHOR: [number, number] = [ICON_SIZE[0] / 2, ICON_SIZE[1]]; // 가운데-아래
+    const POPUP_ANCHOR: [number, number] = [0, -ICON_SIZE[1]];
+
     const cache = new Map<string, LeafletIcon>();
     for (const [name, url] of Object.entries(franchiseIcons)) {
       cache.set(
@@ -254,9 +259,9 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         leaflet.icon({
           iconUrl: url,
           iconRetinaUrl: url,
-          iconSize: [24, 24],
-          iconAnchor: [12, 24],
-          popupAnchor: [0, -24],
+          iconSize: ICON_SIZE,
+          iconAnchor: ICON_ANCHOR,
+          popupAnchor: POPUP_ANCHOR,
         })
       );
     }
@@ -267,9 +272,9 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
       leaflet.icon({
         iconUrl: fallback,
         iconRetinaUrl: fallback,
-        iconSize: [34, 34],
-        iconAnchor: [17, 34],
-        popupAnchor: [0, -34],
+        iconSize: ICON_SIZE,
+        iconAnchor: ICON_ANCHOR,
+        popupAnchor: POPUP_ANCHOR,
       })
     );
 
@@ -299,8 +304,13 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
       .catch((err) => console.error("Fix_Franchise.json fetch error:", err));
   }, []);
 
+  /**
+   * ✅ 전체 해제 시(선택 0개) 지도에 "아무것도" 안 보이게
+   * 기존: selectedFranchises.length === 0 이면 전체 표시(문제)
+   * 수정: selectedFranchises.length > 0 일 때만 includes 허용
+   */
   const filtered = poiData.filter(
-    (p) => selectedFranchises.length === 0 || selectedFranchises.includes(p.Franchise_name)
+    (p) => selectedFranchises.length > 0 && selectedFranchises.includes(p.Franchise_name)
   );
 
   return (
@@ -329,34 +339,36 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         <MapContainer center={[37.5665, 126.978]} zoom={11} style={{ height: "100%" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-          {filtered.map((poi) => {
-            const lat = Number(poi.Store_lat);
-            const lng = Number(poi.Store_long);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          {/* ✅ 선택이 0개면 마커 렌더 자체를 안 함 */}
+          {selectedFranchises.length > 0 &&
+            filtered.map((poi) => {
+              const lat = Number(poi.Store_lat);
+              const lng = Number(poi.Store_long);
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-            return (
-              <Marker
-                key={poi.FS_name || `${poi.Franchise_code}-${poi.Store_code}`}
-                position={[lat, lng]}
-                icon={getLeafletIcon(poi.Franchise_name)}
-              >
-                <Popup>
-                  <div className="flex items-center gap-2 mb-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={getIconUrl(poi.Franchise_name)}
-                      alt={`${poi.Franchise_name} 로고`}
-                      className="w-5 h-5"
-                    />
-                    <b>{poi.Franchise_name}</b>
-                  </div>
-                  <div>{poi.Store_name}</div>
-                  <div className="text-sm text-gray-600">{poi.Store_addr}</div>
-                  <div className="text-sm">{poi.Store_tel}</div>
-                </Popup>
-              </Marker>
-            );
-          })}
+              return (
+                <Marker
+                  key={poi.FS_name || `${poi.Franchise_code}-${poi.Store_code}`}
+                  position={[lat, lng]}
+                  icon={getLeafletIcon(poi.Franchise_name)}
+                >
+                  <Popup>
+                    <div className="flex items-center gap-2 mb-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getIconUrl(poi.Franchise_name)}
+                        alt={`${poi.Franchise_name} 로고`}
+                        className="w-5 h-5"
+                      />
+                      <b>{poi.Franchise_name}</b>
+                    </div>
+                    <div>{poi.Store_name}</div>
+                    <div className="text-sm text-gray-600">{poi.Store_addr}</div>
+                    <div className="text-sm">{poi.Store_tel}</div>
+                  </Popup>
+                </Marker>
+              );
+            })}
         </MapContainer>
       </div>
     </div>
