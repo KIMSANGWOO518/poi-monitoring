@@ -1,4 +1,3 @@
-console.log("### POI MAP VERSION: 2025-12-19 marker-logo ###");
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
