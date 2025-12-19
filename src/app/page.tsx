@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Icon as LeafletIcon } from "leaflet"; // ✅ type-only import (런타임 영향 없음)
-import { LogOut, ChevronDown } from "lucide-react";
+import {
+  LogOut,
+  ChevronDown,
+  MapPin,
+  Phone,
+  Crosshair,
+  BadgeCheck,
+  Sparkles,
+  Ban,
+} from "lucide-react";
 
 /* =========================
    타입 정의
@@ -25,6 +34,7 @@ interface POIData {
 
 /* =========================
    멀티셀렉트 드롭다운
+   - icons: string(url) 또는 ReactNode(아이콘 컴포넌트) 모두 지원
 ========================= */
 function MultiSelectDropdown({
   options,
@@ -37,7 +47,7 @@ function MultiSelectDropdown({
   selected: string[];
   onChange: (selected: string[]) => void;
   label: string;
-  icons?: Record<string, string>;
+  icons?: Record<string, string | React.ReactNode>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -59,6 +69,22 @@ function MultiSelectDropdown({
 
   const selectAll = () => onChange(options);
   const clearAll = () => onChange([]);
+
+  const renderIcon = (option: string) => {
+    const icon = icons[option];
+    if (!icon) return null;
+
+    // ✅ string이면 이미지로 렌더
+    if (typeof icon === "string") {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={icon} alt={`${option} 아이콘`} className="w-4 h-4 object-contain" />
+      );
+    }
+
+    // ✅ ReactNode면 그대로 렌더 (lucide 아이콘 등)
+    return <span className="inline-flex items-center justify-center w-4 h-4">{icon}</span>;
+  };
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -110,14 +136,7 @@ function MultiSelectDropdown({
                   className="mr-3"
                 />
                 <span className="flex items-center gap-2 text-sm">
-                  {icons[option] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={icons[option]}
-                      alt={`${option} 로고`}
-                      className="w-4 h-4 object-contain"
-                    />
-                  )}
+                  {renderIcon(option)}
                   {option}
                 </span>
               </label>
@@ -168,7 +187,6 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex justify-center mb-6">
-          {/* ✅ public/icons에 넣어둔 로고를 쓰면 가장 안정적 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/inavi_logo.png" alt="iNavi 로고" className="h-14" />
         </div>
@@ -210,8 +228,14 @@ function LoginForm({ onLogin }: { onLogin: (username: string) => void }) {
 ========================= */
 function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: () => void }) {
   const [poiData, setPoiData] = useState<POIData[]>([]);
+
+  // ✅ 프랜차이즈 필터
   const [selectedFranchises, setSelectedFranchises] = useState<string[]>([]);
   const [franchiseOptions, setFranchiseOptions] = useState<string[]>([]);
+
+  // ✅ status 필터 (유지/신규/폐점)
+  const STATUS_OPTIONS = useMemo(() => ["유지", "신규", "폐점"], []);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(STATUS_OPTIONS);
 
   // ✅ leaflet을 “클라이언트에서만” 로드 (window 에러 방지)
   const [leaflet, setLeaflet] = useState<null | typeof import("leaflet")>(null);
@@ -227,10 +251,6 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
     };
   }, []);
 
-  /**
-   * ✅ 핵심 변경점
-   * public/icons/* 에 넣은 파일은 런타임에서 /icons/* 로 접근됩니다.
-   */
   const ICON_BASE = "/icons";
 
   const franchiseIcons = useMemo<Record<string, string>>(
@@ -245,15 +265,26 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
   const getIconUrl = (name: string) => franchiseIcons[name] || `${ICON_BASE}/inavi_logo.png`;
 
+  // ✅ status 드롭다운은 "파일" 대신 lucide 아이콘 사용
+  const statusIcons = useMemo<Record<string, React.ReactNode>>(
+    () => ({
+      유지: <BadgeCheck className="w-4 h-4 text-green-600" />,
+      신규: <Sparkles className="w-4 h-4 text-blue-600" />,
+      폐점: <Ban className="w-4 h-4 text-red-600" />,
+    }),
+    []
+  );
+
   const formatCoord = (v: unknown) => {
     const n = Number(v);
     if (!Number.isFinite(n)) return "-";
     return n.toFixed(6);
   };
 
+  const normalizeStatus = (s?: string) => (s || "").trim();
+
   const getStatusBadge = (status?: string) => {
-    const s = (status || "").trim();
-    // 필요하면 여기서 케이스를 더 추가하면 됨
+    const s = normalizeStatus(status);
     if (s === "유지") return { text: "유지", cls: "bg-green-50 text-green-700 border-green-200" };
     if (s === "신규") return { text: "신규", cls: "bg-blue-50 text-blue-700 border-blue-200" };
     if (s === "폐점" || s === "삭제")
@@ -266,9 +297,8 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
   const iconCache = useMemo(() => {
     if (!leaflet) return null;
 
-    // ✅ 여기서 마커 크기 조절 가능
     const ICON_SIZE: [number, number] = [20, 20];
-    const ICON_ANCHOR: [number, number] = [ICON_SIZE[0] / 2, ICON_SIZE[1]]; // 가운데-아래
+    const ICON_ANCHOR: [number, number] = [ICON_SIZE[0] / 2, ICON_SIZE[1]];
     const POPUP_ANCHOR: [number, number] = [0, -ICON_SIZE[1]];
 
     const cache = new Map<string, LeafletIcon>();
@@ -319,16 +349,33 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 
         setFranchiseOptions(franchises);
         setSelectedFranchises(franchises);
+        setSelectedStatuses(STATUS_OPTIONS);
       })
       .catch((err) => console.error("Fix_Franchise.json fetch error:", err));
-  }, []);
+  }, [STATUS_OPTIONS]);
 
-  /**
-   * ✅ 전체 해제 시(선택 0개) 지도에 "아무것도" 안 보이게
-   */
-  const filtered = poiData.filter(
-    (p) => selectedFranchises.length > 0 && selectedFranchises.includes(p.Franchise_name)
-  );
+  const filtered = poiData.filter((p) => {
+    if (selectedFranchises.length === 0) return false;
+    if (selectedStatuses.length === 0) return false;
+
+    const okFranchise = selectedFranchises.includes(p.Franchise_name);
+
+    const st = normalizeStatus(p.status);
+    const mappedStatus = st === "삭제" ? "폐점" : st;
+    const okStatus = selectedStatuses.includes(mappedStatus);
+
+    return okFranchise && okStatus;
+  });
+
+  const canRenderMarkers = selectedFranchises.length > 0 && selectedStatuses.length > 0;
+
+  const statusIconForPopup = (status?: string) => {
+    const s = normalizeStatus(status);
+    if (s === "유지") return <BadgeCheck className="w-4 h-4 text-green-600" />;
+    if (s === "신규") return <Sparkles className="w-4 h-4 text-blue-600" />;
+    if (s === "폐점" || s === "삭제") return <Ban className="w-4 h-4 text-red-600" />;
+    return <BadgeCheck className="w-4 h-4 text-gray-500" />;
+  };
 
   return (
     <div className="min-h-screen p-6 bg-white">
@@ -344,20 +391,30 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
         </div>
       </div>
 
-      <MultiSelectDropdown
-        options={franchiseOptions}
-        selected={selectedFranchises}
-        onChange={setSelectedFranchises}
-        label="프랜차이즈"
-        icons={franchiseIcons}
-      />
+      {/* ✅ 드롭다운 2개 나란히 */}
+      <div className="flex flex-wrap items-start gap-3">
+        <MultiSelectDropdown
+          options={franchiseOptions}
+          selected={selectedFranchises}
+          onChange={setSelectedFranchises}
+          label="프랜차이즈"
+          icons={franchiseIcons}
+        />
+
+        <MultiSelectDropdown
+          options={STATUS_OPTIONS}
+          selected={selectedStatuses}
+          onChange={setSelectedStatuses}
+          label="status"
+          icons={statusIcons}
+        />
+      </div>
 
       <div className="mt-4 h-[700px] border rounded overflow-hidden">
         <MapContainer center={[37.5665, 126.978]} zoom={11} style={{ height: "100%" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-          {/* ✅ 선택이 0개면 마커 렌더 자체를 안 함 */}
-          {selectedFranchises.length > 0 &&
+          {canRenderMarkers &&
             filtered.map((poi) => {
               const lat = Number(poi.Store_lat);
               const lng = Number(poi.Store_long);
@@ -373,7 +430,6 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
                 >
                   <Popup>
                     <div className="min-w-[260px] max-w-[340px]">
-                      {/* 헤더: 로고 + 프랜차이즈 + 상태 배지 */}
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-200">
                         <div className="flex items-center gap-2">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -398,15 +454,18 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
                         </span>
                       </div>
 
-                      {/* 본문 */}
                       <div className="space-y-2 text-[13px] text-gray-800">
-                        <div className="flex gap-2">
-                          <span className="shrink-0 w-5 text-center">📍</span>
+                        <div className="flex gap-2 items-start">
+                          <span className="shrink-0 w-5 flex justify-center pt-[2px]">
+                            <MapPin className="w-4 h-4 text-red-600" />
+                          </span>
                           <span className="break-words">{poi.Store_addr}</span>
                         </div>
 
-                        <div className="flex gap-2">
-                          <span className="shrink-0 w-5 text-center">📞</span>
+                        <div className="flex gap-2 items-start">
+                          <span className="shrink-0 w-5 flex justify-center pt-[2px]">
+                            <Phone className="w-4 h-4 text-gray-700" />
+                          </span>
                           <a
                             href={`tel:${(poi.Store_tel || "").replace(/[^0-9+]/g, "")}`}
                             className="text-blue-700 hover:underline"
@@ -415,17 +474,19 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
                           </a>
                         </div>
 
-                        {/* ✅ 좌표 표시 (lat/long) */}
-                        <div className="flex gap-2">
-                          <span className="shrink-0 w-5 text-center">🧭</span>
+                        <div className="flex gap-2 items-start">
+                          <span className="shrink-0 w-5 flex justify-center pt-[2px]">
+                            <Crosshair className="w-4 h-4 text-amber-600" />
+                          </span>
                           <span className="text-gray-700">
                             {formatCoord(poi.Store_lat)}, {formatCoord(poi.Store_long)}
                           </span>
                         </div>
 
-                        {/* ✅ status 표시 (추가로 한 줄 더 표시 원할 때) */}
-                        <div className="flex gap-2">
-                          <span className="shrink-0 w-5 text-center">✅</span>
+                        <div className="flex gap-2 items-start">
+                          <span className="shrink-0 w-5 flex justify-center pt-[2px]">
+                            {statusIconForPopup(poi.status)}
+                          </span>
                           <span className="text-gray-700">{badge.text}</span>
                         </div>
                       </div>
@@ -445,7 +506,7 @@ function MapContent({ onLogout, currentUser }: { currentUser: string; onLogout: 
 ========================= */
 export default function POIMonitoringApp() {
   useEffect(() => {
-    console.log("### POI MAP VERSION: 2025-12-19 marker-logo ###");
+    console.log("### POI MAP VERSION: 2025-12-19 status-filter-lucide ###");
   }, []);
 
   const [user, setUser] = useState<string | null>(null);
