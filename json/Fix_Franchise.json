@@ -1,19 +1,5 @@
 [
   {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "Store_name": "동탄CGV스윗바점",
-    "Store_code": "1105518",
-    "Store_addr": "경기도 화성시동탄중앙로 220",
-    "Store_tel": "154-4-1122",
-    "Store_lat": "37.20527010399548",
-    "Store_long": "127.06941391375181",
-    "FS_name": "2_동탄CGV스윗바점",
-    "FS_code": "2_1105518",
-    "Store_region": "경기도",
-    "status": "폐점"
-  },
-  {
     "Franchise_name": "스타벅스",
     "Franchise_code": "0",
     "Store_name": "숭실대",
