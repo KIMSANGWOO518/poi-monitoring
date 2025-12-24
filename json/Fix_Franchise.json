@@ -1,30 +1,30 @@
 [
   {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "Store_name": "답십리사거리점",
-    "Store_code": "1900618",
-    "Store_addr": "서울특별시 동대문구답십리로 150",
-    "Store_tel": "070-8880-8526",
-    "Store_lat": "37.572669022916834",
-    "Store_long": "127.0566251746391",
-    "FS_name": "2_답십리사거리점",
-    "FS_code": "2_1900618",
-    "Store_region": "서울특별시",
-    "status": "폐점"
-  },
-  {
     "Franchise_name": "스타벅스",
     "Franchise_code": "0",
-    "Store_name": "검단이마트",
-    "Store_code": "2506",
-    "Store_addr": "인천광역시 서구 서곶로 754 (당하동)",
+    "Store_name": "수지메디파크",
+    "Store_code": "2501",
+    "Store_addr": "경기도 용인시 수지구 수풍로 65 (풍덕천동) B113, B114호",
     "Store_tel": "1522-3232",
-    "Store_lat": "37.585361199646115",
-    "Store_long": "126.67692541800861",
-    "FS_name": "0_검단이마트",
-    "FS_code": "0_2506",
-    "Store_region": "인천광역시",
+    "Store_lat": "37.329579",
+    "Store_long": "127.09208",
+    "FS_name": "0_수지메디파크",
+    "FS_code": "0_2501",
+    "Store_region": "경기도",
+    "status": "신규"
+  },
+  {
+    "Franchise_name": "투썸플레이스",
+    "Franchise_code": "2",
+    "Store_name": "음성성본DI점",
+    "Store_code": "1903556",
+    "Store_addr": "충청북도 음성군 대소면 성본리 907투썸플레이스",
+    "Store_tel": "043-000-0000",
+    "Store_lat": "36.969062093411324",
+    "Store_long": "127.5363731259354",
+    "FS_name": "2_음성성본DI점",
+    "FS_code": "2_1903556",
+    "Store_region": "충청북도",
     "status": "신규"
   },
   {
@@ -21557,6 +21557,20 @@
     "FS_name": "0_그랜드조선제주",
     "FS_code": "0_2505",
     "Store_region": "제주특별자치도",
+    "status": "유지"
+  },
+  {
+    "Franchise_name": "스타벅스",
+    "Franchise_code": "0",
+    "Store_name": "검단이마트",
+    "Store_code": "2506",
+    "Store_addr": "인천광역시 서구 서곶로 754 (당하동)",
+    "Store_tel": "1522-3232",
+    "Store_lat": "37.585361199646115",
+    "Store_long": "126.67692541800861",
+    "FS_name": "0_검단이마트",
+    "FS_code": "0_2506",
+    "Store_region": "인천광역시",
     "status": "유지"
   },
   {
