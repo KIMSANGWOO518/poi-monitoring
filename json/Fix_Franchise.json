@@ -2,29 +2,15 @@
   {
     "Franchise_name": "스타벅스",
     "Franchise_code": "0",
-    "Store_name": "수지메디파크",
-    "Store_code": "2501",
-    "Store_addr": "경기도 용인시 수지구 수풍로 65 (풍덕천동) B113, B114호",
+    "Store_name": "강남역7번출구",
+    "Store_code": "2512",
+    "Store_addr": "서울특별시 서초구 강남대로 385 (서초동)",
     "Store_tel": "1522-3232",
-    "Store_lat": "37.329579",
-    "Store_long": "127.09208",
-    "FS_name": "0_수지메디파크",
-    "FS_code": "0_2501",
-    "Store_region": "경기도",
-    "status": "신규"
-  },
-  {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "Store_name": "음성성본DI점",
-    "Store_code": "1903556",
-    "Store_addr": "충청북도 음성군 대소면 성본리 907투썸플레이스",
-    "Store_tel": "043-000-0000",
-    "Store_lat": "36.969062093411324",
-    "Store_long": "127.5363731259354",
-    "FS_name": "2_음성성본DI점",
-    "FS_code": "2_1903556",
-    "Store_region": "충청북도",
+    "Store_lat": "37.49714397330399",
+    "Store_long": "127.02762108776409",
+    "FS_name": "0_강남역7번출구",
+    "FS_code": "0_2512",
+    "Store_region": "서울특별시",
     "status": "신규"
   },
   {
@@ -21501,6 +21487,20 @@
     "FS_name": "0_면목역",
     "FS_code": "0_2500",
     "Store_region": "서울특별시",
+    "status": "유지"
+  },
+  {
+    "Franchise_name": "스타벅스",
+    "Franchise_code": "0",
+    "Store_name": "수지메디파크",
+    "Store_code": "2501",
+    "Store_addr": "경기도 용인시 수지구 수풍로 65 (풍덕천동) B113, B114호",
+    "Store_tel": "1522-3232",
+    "Store_lat": "37.329579",
+    "Store_long": "127.09208",
+    "FS_name": "0_수지메디파크",
+    "FS_code": "0_2501",
+    "Store_region": "경기도",
     "status": "유지"
   },
   {
@@ -55815,6 +55815,20 @@
     "FS_name": "2_한티점",
     "FS_code": "2_1903554",
     "Store_region": "서울특별시",
+    "status": "유지"
+  },
+  {
+    "Franchise_name": "투썸플레이스",
+    "Franchise_code": "2",
+    "Store_name": "음성성본DI점",
+    "Store_code": "1903556",
+    "Store_addr": "충청북도 음성군 대소면 성본리 907투썸플레이스",
+    "Store_tel": "043-000-0000",
+    "Store_lat": "36.969062093411324",
+    "Store_long": "127.5363731259354",
+    "FS_name": "2_음성성본DI점",
+    "FS_code": "2_1903556",
+    "Store_region": "충청북도",
     "status": "유지"
   },
   {
