@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import franchiseData from "../../../../json/Fix_Franchise.json";
 
-// ✅ JSON 한 줄 타입 (status 제거 + Store_region 추가)
+// ✅ JSON 한 줄 타입
 type FranchiseItem = {
   Franchise_name: string;
   Franchise_code: string;
@@ -14,10 +14,10 @@ type FranchiseItem = {
   Store_lat: string;
   Store_long: string;
   FS_name: string;
-  Store_region?: string; // ✅ 추가 (없을 수도 있으니 optional)
+  Store_region?: string;
 };
 
-// ✅ JSON import 타입 이슈 방지 (빌드 에러 방지용)
+// ✅ JSON import 타입 이슈 방지
 const data = franchiseData as unknown as FranchiseItem[];
 
 // -----------------------------
@@ -45,34 +45,43 @@ const DAILY_LIMITS: Record<string, number> = {
   team_digital_display: 200,
 };
 
-// Redis로 카운트 + 제한 체크
+// 🔥 [수정된 부분] Redis 에러가 나도 API가 죽지 않게 안전장치 추가
 async function checkRateLimit(role: string, clientKey: string) {
   const limit = DAILY_LIMITS[role];
 
+  // 1. 무제한(Admin)이면 바로 통과
   if (!Number.isFinite(limit)) return { used: 0, remaining: Infinity, exceeded: false };
 
+  // 2. Redis 설정이 아예 없으면 그냥 통과 (에러 방지용)
   if (!redis) {
-    console.warn("[FRANCHISE_API] Redis not available, skipping rate limit check.");
-    return { used: 0, remaining: Infinity, exceeded: false };
+    console.warn("[FRANCHISE_API] Redis not configured. Skipping rate limit check.");
+    return { used: 0, remaining: limit, exceeded: false };
   }
 
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const key = `franchise_api:${role}:${clientKey}:${today}`;
+  try {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const key = `franchise_api:${role}:${clientKey}:${today}`;
 
-  const usedCountRaw = await redis.incr(key);
-  const usedCount = Number(usedCountRaw);
+    const usedCountRaw = await redis.incr(key);
+    const usedCount = Number(usedCountRaw);
 
-  if (usedCount === 1) {
-    await redis.expire(key, 60 * 60 * 24);
+    if (usedCount === 1) {
+      await redis.expire(key, 60 * 60 * 24);
+    }
+
+    const remaining = Math.max(0, limit - usedCount);
+
+    if (usedCount > limit) {
+      return { used: usedCount, remaining: 0, exceeded: true };
+    }
+
+    return { used: usedCount, remaining, exceeded: false };
+
+  } catch (error) {
+    // 🔥 [핵심] Redis 연결 에러가 나면 서버를 죽이지 말고 로그만 남기고 통과시킴
+    console.error("[FRANCHISE_API] Redis error ignored:", error);
+    return { used: 0, remaining: limit, exceeded: false }; // 쿨하게 통과
   }
-
-  const remaining = Math.max(0, limit - usedCount);
-
-  if (usedCount > limit) {
-    return { used: usedCount, remaining: 0, exceeded: true };
-  }
-
-  return { used: usedCount, remaining, exceeded: false };
 }
 
 // -----------------------------
@@ -81,12 +90,12 @@ async function checkRateLimit(role: string, clientKey: string) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  // 1) 클라이언트에서 보낸 키
+  // 1) 클라이언트에서 보낸 키 확인
   const clientKeyFromQuery = searchParams.get("key");
   const clientKeyFromHeader = request.headers.get("x-api-key");
   const clientKey = clientKeyFromQuery || clientKeyFromHeader;
 
-  // 2) 서버에 등록된 키들을 테이블로 구성
+  // 2) 서버 키 목록 구성
   const keyRoles: Record<string, string> = {};
 
   if (process.env.API_SECRET_KEY) keyRoles[process.env.API_SECRET_KEY] = "admin";
@@ -101,13 +110,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No API keys configured on server" }, { status: 500 });
   }
 
-  // 3) 이 요청이 어떤 키인지 판별
+  // 3) 키 검증
   const callerRole = clientKey ? keyRoles[clientKey] : undefined;
 
-  // 4) 로그 출력
+  // 4) 로그 출력 (여기서 region을 Store_region으로 쓰고 싶으시면 변수명만 바꾸시면 됩니다)
   const ip = request.headers.get("x-forwarded-for") || "unknown";
   const franchise = searchParams.get("franchise");
-  const region = searchParams.get("region"); // ✅ (옵션) 지역 필터
+  const region = searchParams.get("region"); 
 
   console.log("[FRANCHISE_API_CALL]", {
     time: new Date().toISOString(),
@@ -123,17 +132,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
   }
 
-  // 6) 팀별 일일 호출 제한 체크
+  // 6) 호출 제한 체크 (이제 에러 안 남!)
   const limitInfo = await checkRateLimit(callerRole, clientKey);
 
   if (limitInfo.exceeded) {
-    console.warn("[FRANCHISE_RATE_LIMIT]", {
-      role: callerRole,
-      key: clientKey.slice(0, 4) + "***",
-      used: limitInfo.used,
-      remaining: limitInfo.remaining,
-    });
-
     return NextResponse.json(
       {
         error: "Daily API quota exceeded",
@@ -153,13 +155,11 @@ export async function GET(request: Request) {
     result = result.filter((item) => item.Franchise_name.toLowerCase() === target);
   }
 
-  // ✅ (옵션) region 필터: Store_region이 없는 데이터는 제외되도록 처리
   if (region) {
     const target = region.toLowerCase();
     result = result.filter((item) => (item.Store_region ?? "").toLowerCase() === target);
   }
 
-  // ✅ 캐시 방지 헤더 (API 갱신 즉시 반영되게)
   return NextResponse.json(
     {
       count: result.length,
