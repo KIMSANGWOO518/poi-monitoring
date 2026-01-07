@@ -114,20 +114,6 @@
   {
     "Franchise_name": "투썸플레이스",
     "Franchise_code": "2",
-    "Store_name": "광명사거리역점",
-    "Store_code": "1105417",
-    "Store_addr": "경기도 광명시광명로 896",
-    "Store_tel": "02-890-2561",
-    "Store_lat": "37.47888638539958",
-    "Store_long": "126.85437594732126",
-    "FS_name": "2_광명사거리역점",
-    "FS_code": "2_1105417",
-    "Store_region": "경기도",
-    "status": "폐점"
-  },
-  {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
     "Store_name": "청담역점",
     "Store_code": "1108670",
     "Store_addr": "서울특별시 강남구 영동대로704 (청담동,삼강빌딩) 1층",
@@ -151,21 +137,7 @@
     "FS_name": "2_분당수내점",
     "FS_code": "2_1109514",
     "Store_region": "경기도",
-    "status": "폐점"
-  },
-  {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "Store_name": "고양향동점",
-    "Store_code": "1900878",
-    "Store_addr": "경기도 고양시 덕양구 꽃내음1길 180 (향동동)",
-    "Store_tel": "02-3159-3344",
-    "Store_lat": "37.59844714131626",
-    "Store_long": "126.89010209517411",
-    "FS_name": "2_고양향동점",
-    "FS_code": "2_1900878",
-    "Store_region": "경기도",
-    "status": "폐점"
+    "status": "유지"
   },
   {
     "Franchise_name": "할리스",
@@ -207,7 +179,7 @@
     "FS_name": "2_[휴점]광명사거리역점",
     "FS_code": "2_1903663",
     "Store_region": "경기도",
-    "status": "신규"
+    "status": "유지"
   },
   {
     "Franchise_name": "투썸플레이스",
@@ -226,34 +198,6 @@
   {
     "Franchise_name": "투썸플레이스",
     "Franchise_code": "2",
-    "Store_name": "화성동탄나루점",
-    "Store_code": "1903708",
-    "Store_addr": "경기도 화성시동탄솔빛로 68",
-    "Store_tel": "031-613-0115",
-    "Store_lat": "37.19443829963523",
-    "Store_long": "127.07501589753346",
-    "FS_name": "2_화성동탄나루점",
-    "FS_code": "2_1903708",
-    "Store_region": "경기도",
-    "status": "신규"
-  },
-  {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "Store_name": "분당수내점",
-    "Store_code": "1903709",
-    "Store_addr": "경기도 성남시 분당구 황새울로258번길31 (수내동,분당예미지빌딩) 1층 투썸플레이스",
-    "Store_tel": "031-715-9207",
-    "Store_lat": "37.3790997089446",
-    "Store_long": "127.11636843578566",
-    "FS_name": "2_분당수내점",
-    "FS_code": "2_1903709",
-    "Store_region": "경기도",
-    "status": "신규"
-  },
-  {
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
     "Store_name": "고양향동점",
     "Store_code": "1903729",
     "Store_addr": "경기도 고양시 덕양구 꽃내음1길 180 (향동동)",
@@ -263,7 +207,7 @@
     "FS_name": "2_고양향동점",
     "FS_code": "2_1903729",
     "Store_region": "경기도",
-    "status": "신규"
+    "status": "유지"
   },
   {
     "Franchise_name": "할리스",
