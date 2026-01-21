@@ -15,6 +15,7 @@ type FranchiseItem = {
   Store_long: string;
   FS_name: string;
   Store_region?: string;
+  status?: string;
 };
 
 // ✅ JSON import 타입 이슈 방지
@@ -116,7 +117,8 @@ export async function GET(request: Request) {
   // 4) 로그 출력 (여기서 region을 Store_region으로 쓰고 싶으시면 변수명만 바꾸시면 됩니다)
   const ip = request.headers.get("x-forwarded-for") || "unknown";
   const franchise = searchParams.get("franchise");
-  const region = searchParams.get("region"); 
+  const region = searchParams.get("region");
+  const status = searchParams.get("status"); 
 
   console.log("[FRANCHISE_API_CALL]", {
     time: new Date().toISOString(),
@@ -159,6 +161,11 @@ export async function GET(request: Request) {
     const target = region.toLowerCase();
     result = result.filter((item) => (item.Store_region ?? "").toLowerCase() === target);
   }
+
+  if (status) {
+    result = result.filter((item) => item.status === status);
+  }
+
 
   return NextResponse.json(
     {
