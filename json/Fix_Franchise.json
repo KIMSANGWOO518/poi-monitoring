@@ -62832,20 +62832,6 @@
     "status": "폐점"
   },
   {
-    "Store_code": "1903731",
-    "Store_name": "강남삼성로점",
-    "Store_addr": "서울특별시 강남구 삼성로 519 (삼성동, 원혜빌딩)519",
-    "Store_tel": "02-568-8849",
-    "Store_lat": "37.50837198990661",
-    "Store_long": "127.05543141054837",
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "FS_name": "2_강남삼성로점",
-    "FS_code": "2_1903731",
-    "Store_region": "서울특별시",
-    "status": "폐점"
-  },
-  {
     "Franchise_name": "스타벅스",
     "Franchise_code": "0",
     "Store_name": "경주중앙",
