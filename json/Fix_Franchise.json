@@ -62860,34 +62860,6 @@
     "status": "신규"
   },
   {
-    "Store_code": "1903713",
-    "Store_name": "울산삼산본동점",
-    "Store_addr": "울산광역시 남구 남중로100 (삼산동) 1층",
-    "Store_tel": "052-977-7770",
-    "Store_lat": "35.54315021315714",
-    "Store_long": "129.34837919231015",
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "FS_name": "2_울산삼산본동점",
-    "FS_code": "2_1903713",
-    "Store_region": "울산광역시",
-    "status": "신규"
-  },
-  {
-    "Store_code": "1903857",
-    "Store_name": "부산아트몰링점",
-    "Store_addr": "부산광역시 사하구낙동남로 1413",
-    "Store_tel": "051-999-7309",
-    "Store_lat": "35.10656359172617",
-    "Store_long": "128.96633989671716",
-    "Franchise_name": "투썸플레이스",
-    "Franchise_code": "2",
-    "FS_name": "2_부산아트몰링점",
-    "FS_code": "2_1903857",
-    "Store_region": "부산광역시",
-    "status": "신규"
-  },
-  {
     "Franchise_name": "스타벅스",
     "Franchise_code": "0",
     "Store_name": "연세암병원",
@@ -62913,7 +62885,7 @@
     "FS_name": "0_경주중앙",
     "FS_code": "0_588",
     "Store_region": "경상북도",
-    "status": "신규"
+    "status": "유지"
   },
   {
     "Franchise_name": "스타벅스",
@@ -62941,7 +62913,7 @@
     "FS_name": "2_전주신시가지점",
     "FS_code": "2_1102251",
     "Store_region": "전북특별자치도",
-    "status": "신규"
+    "status": "유지"
   },
   {
     "Store_code": "1903780",
